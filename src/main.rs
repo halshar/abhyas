@@ -5,7 +5,9 @@ use std::path::{Path, PathBuf};
 /// create db directory and file and return the path
 fn create_file() -> std::io::Result<PathBuf> {
     // create cache directory if not present
-    let cache_dir = dirs::cache_dir().unwrap();
+    let cache_dir = dirs::cache_dir()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Cache directory not found"))?;
+
     let dir_name = &cache_dir.join("abhyas");
     if !Path::new(&dir_name).exists() {
         fs::create_dir(&dir_name)?;
@@ -21,22 +23,34 @@ fn create_file() -> std::io::Result<PathBuf> {
 }
 
 /// create the default table if it does not exist and return the connection
-fn create_db_connection() -> Result<Connection> {
-    println!("here");
-    let file_name = create_file().unwrap();
+fn create_db_connection() -> io::Result<Connection> {
+    let file_name = create_file()
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Error creating file: {}", e)))?;
 
     // create connection
-    let conn = Connection::open(file_name)?;
+    let conn = Connection::open(file_name).map_err(|e| {
+        io::Error::new(
+            io::ErrorKind::Other,
+            format!("Error while creating db connection: {}", e),
+        )
+    })?;
 
+    // create default table
     conn.execute(
-        "CREATE TABLE IF NOT EXISTS data (
+        "CREATE TABLE IF NOT EXISTS links (
             link            TEXT PRIMARY KEY,
             solved_count    INTEGER NOT NULL,
-            mark_solve      INTEGER NOT NULL,
-            skip            INTEGER NOT NULL
+            is_solved       INTEGER NOT NULL,
+            is_skipped      INTEGER NOT NULL
         )",
         (),
-    )?;
+    )
+    .map_err(|e| {
+        io::Error::new(
+            io::ErrorKind::Other,
+            format!("Error while creating db table: {}", e),
+        )
+    })?;
 
     Ok(conn)
 }
