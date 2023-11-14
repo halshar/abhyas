@@ -1,8 +1,17 @@
 use rusqlite::ffi::{SQLITE_CONSTRAINT_PRIMARYKEY, SQLITE_CONSTRAINT_UNIQUE};
 use rusqlite::Connection;
 use std::fs;
-use std::io;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+
+enum CustomErros {
+    CacheDirectoryNotFound,
+    CreateDirectoryFailed,
+    CreateDBFileFailed,
+    DBConnectionFailed,
+    DBQueryFailed,
+    DuplicateLinkValue,
+    Others(String),
+}
 
 /// struct to carry the db connection
 struct Db {
@@ -51,55 +60,53 @@ impl Db {
     }
 }
 
-/// create db directory and file and return the path
-fn create_file() -> std::io::Result<PathBuf> {
-    // create cache directory if not present
-    let cache_dir = dirs::cache_dir()
-        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Cache directory not found"))?;
+/// create directory to store the db file
+fn create_file() -> Result<(), CustomErros> {
+    let cache_dir = match dirs::cache_dir() {
+        Some(value) => value,
+        None => return Err(CustomErros::CacheDirectoryNotFound),
+    };
 
     let dir_name = &cache_dir.join("abhyas");
-    if !Path::new(&dir_name).exists() {
-        fs::create_dir(&dir_name)?;
+    if Path::new(&dir_name).try_exists().is_err() {
+        if fs::create_dir(&dir_name).is_err() {
+            return Err(CustomErros::CreateDirectoryFailed);
+        }
     }
 
-    // create db file if not present
     let file_name = &dir_name.join("abhyas.db");
-    if !Path::new(&file_name).exists() {
-        fs::File::create(&file_name)?;
+    if Path::new(&file_name).try_exists().is_err() {
+        if fs::File::create(&file_name).is_err() {
+            return Err(CustomErros::CreateDBFileFailed);
+        }
     }
 
-    Ok(file_name.to_path_buf())
+    Ok(())
 }
 
-/// create the default table if it does not exist and return the connection
-fn create_db_connection() -> io::Result<Connection> {
-    let file_name = create_file()
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Error creating file: {}", e)))?;
+/// create db connection
+fn create_db_connection() -> Result<Connection, CustomErros> {
+    let file_name = create_file()?;
 
-    // create connection
-    let conn = Connection::open(file_name).map_err(|e| {
-        io::Error::new(
-            io::ErrorKind::Other,
-            format!("Error while creating db connection: {}", e),
-        )
-    })?;
+    let conn = match Connection::open(file_name) {
+        Ok(value) => value,
+        Err(e) => return Err(CustomErros::DBConnectionFailed),
+    };
 
-    // create default table
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS links (
+    if conn
+        .execute(
+            "CREATE TABLE IF NOT EXISTS links (
             link            TEXT PRIMARY KEY,
             solved_count    INTEGER NOT NULL,
             is_solved       INTEGER NOT NULL,
             is_skipped      INTEGER NOT NULL
         )",
-        (),
-    )
-    .map_err(|e| {
-        io::Error::new(
-            io::ErrorKind::Other,
-            format!("Error while creating db table: {}", e),
+            (),
         )
-    })?;
+        .is_err()
+    {
+        return Err(CustomErros::DBQueryFailed);
+    }
 
     Ok(conn)
 }
@@ -110,6 +117,28 @@ fn main() -> rusqlite::Result<()> {
     _conn.add_link("demo".to_owned())?;
 
     Ok(())
+}
+
+fn main() {
+    let _conn = match create_db_connection() {
+        Ok(value) => value,
+        Err(e) => match e {
+            CustomErros::CacheDirectoryNotFound => {
+                println!("Error: The cache directory was not found")
+            }
+            CustomErros::CreateDirectoryFailed => {
+                println!("Error: Couldn't create the db directory")
+            }
+            CustomErros::CreateDBFileFailed => println!("Error: Couldn't create the db file"),
+            CustomErros::DBConnectionFailed => println!("Error: DB connection failed"),
+            CustomErros::DBQueryFailed => println!("Error: DB query failed"),
+            _ => unreachable!(),
+        },
+    };
+
+    let db = Db::new(_conn);
+
+    show_options(db);
 }
 
 #[cfg(test)]
