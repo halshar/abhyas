@@ -24,37 +24,31 @@ impl Db {
         Db { conn }
     }
 
-    /// add new links
-    fn add_link(&self, link: String) -> rusqlite::Result<()> {
+    /// add new links into the db
+    fn add_link(&self, link: String) -> Result<(), CustomErros> {
         match self.conn.execute(
             "INSERT INTO links (link,solved_count,is_solved,is_skipped) VALUES (?1,?2,?3,?4)",
             (&link, 0, 0, 0),
         ) {
             Ok(_) => Ok(()),
-            Err(err) => match err {
+            Err(e) => match e {
                 rusqlite::Error::SqliteFailure(err, _) => {
                     if err.code == rusqlite::ErrorCode::ConstraintViolation
                         && (err.extended_code == SQLITE_CONSTRAINT_PRIMARYKEY
                             || err.extended_code == SQLITE_CONSTRAINT_UNIQUE)
                     {
-                        Err(rusqlite::Error::SqliteFailure(
-                            rusqlite::ffi::Error {
-                                code: err.code,
-                                extended_code: err.extended_code,
-                            },
-                            Some("the link should be unique".to_owned()),
-                        ))
+                        return Err(CustomErros::DuplicateLinkValue);
                     } else {
-                        Err(rusqlite::Error::SqliteFailure(
-                            rusqlite::ffi::Error {
-                                code: err.code,
-                                extended_code: err.extended_code,
-                            },
-                            None,
-                        ))
+                        return Err(CustomErros::Others(
+                            "Error: Something went wrong while inserting link".to_owned(),
+                        ));
                     }
                 }
-                _ => Err(err),
+                _ => {
+                    return Err(CustomErros::Others(
+                        "Error: Something went wrong while inserting link".to_owned(),
+                    ))
+                }
             },
         }
     }
