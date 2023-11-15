@@ -1,12 +1,12 @@
 use rusqlite::ffi::{SQLITE_CONSTRAINT_PRIMARYKEY, SQLITE_CONSTRAINT_UNIQUE};
 use rusqlite::Connection;
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::fs::{self, OpenOptions};
+use std::path::PathBuf;
 
 enum CustomErrors {
     CacheDirectoryNotFound,
     CreateDirectoryFailed,
-    CreateDBFileFailed,
+    FileCreationFailed(String),
     DBConnectionFailed,
     DBQueryFailed,
     DuplicateLinkValue,
@@ -62,17 +62,19 @@ fn create_file() -> Result<PathBuf, CustomErrors> {
     };
 
     let dir_name = &cache_dir.join("abhyas");
-    if Path::new(&dir_name).try_exists().is_err() {
-        if fs::create_dir(&dir_name).is_err() {
-            return Err(CustomErrors::CreateDirectoryFailed);
-        }
-    }
+    match fs::create_dir_all(&dir_name) {
+        Ok(_) => (),
+        Err(_) => return Err(CustomErrors::CreateDirectoryFailed),
+    };
 
     let file_name = &dir_name.join("abhyas.db");
-    if Path::new(&file_name).try_exists().is_err() {
-        if fs::File::create(&file_name).is_err() {
-            return Err(CustomErrors::CreateDBFileFailed);
-        }
+    match OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open("abhyas.db")
+    {
+        Ok(_) => (),
+        Err(e) => return Err(CustomErrors::FileCreationFailed(e.to_string())),
     }
 
     Ok(file_name.to_path_buf())
@@ -117,8 +119,8 @@ fn main() {
                 println!("Error: Couldn't create the db directory");
                 return;
             }
-            CustomErrors::CreateDBFileFailed => {
-                println!("Error: Couldn't create the db file");
+            CustomErrors::FileCreationFailed(msg) => {
+                println!("Error: File creation failed due to:{}", msg);
                 return;
             }
             CustomErrors::DBConnectionFailed => {
