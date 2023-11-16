@@ -21,8 +21,14 @@ enum CustomErrors {
 }
 
 enum UserOptions {
+    GetLink,
     AddLink,
     Exit,
+}
+
+enum InnerOptions {
+    MarkAsComplete,
+    SkipAndNext,
 }
 
 /// struct to carry the db connection
@@ -85,11 +91,68 @@ impl Db {
             },
         };
 
-        let mut names: Vec<String> = Vec::new();
-        for name_result in rows {
-            names.push(name_result.unwrap())
+        let mut links: Vec<String> = Vec::new();
+        for link_result in rows {
+            links.push(link_result.unwrap())
         }
-        Ok(names)
+        Ok(links)
+    }
+
+    fn get_single_link(&self) -> Result<Option<String>, CustomErrors> {
+        let mut stmt = match self.conn.prepare(
+            "SELECT link FROM links 
+        WHERE is_solved = 0 AND is_skipped = 0
+        LIMIT 1;",
+        ) {
+            Ok(val) => val,
+            Err(_) => return Err(CustomErrors::StatementFailed),
+        };
+
+        match stmt.query_row([], |row| row.get(0)) {
+            Ok(val) => Ok(Some(val)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(_) => Err(CustomErrors::Others(
+                "Error: While fetching unsolved link".to_owned(),
+            )),
+        }
+    }
+
+    fn mark_as_complete(&self, link: &str) -> Result<(), CustomErrors> {
+        match self.conn.execute(
+            "UPDATE links 
+        SET solved_count = solved_count + 1, is_solved = 1 
+        WHERE link = ?1;",
+            [&link],
+        ) {
+            Ok(_) => (),
+            Err(_) => {
+                return Err(CustomErrors::Others(
+                    "Error: Something went wrong while marking the given link as complete"
+                        .to_owned(),
+                ))
+            }
+        };
+
+        Ok(())
+    }
+
+    fn skip_link(&self, link: &str) -> Result<(), CustomErrors> {
+        match self.conn.execute(
+            "
+            UPDATE links 
+            SET is_skipped = 1 
+            WHERE link = ?1;",
+            [&link],
+        ) {
+            Ok(_) => (),
+            Err(_) => {
+                return Err(CustomErrors::Others(
+                    "Error: Something went wrong while skipping the link".to_string(),
+                ))
+            }
+        };
+
+        Ok(())
     }
 }
 
@@ -143,7 +206,7 @@ fn create_db_connection() -> Result<Connection, CustomErrors> {
 }
 
 fn show_options(db: Db) -> Result<(), CustomErrors> {
-    let options = vec!["Add Link", "Exit"];
+    let options = vec!["Get Link", "Add Link", "Exit"];
 
     let user_option = match Select::new("select your option", options).prompt() {
         Ok(val) => val,
@@ -163,15 +226,62 @@ fn show_options(db: Db) -> Result<(), CustomErrors> {
     };
 
     let selected_item = match user_option {
+        "Get Link" => UserOptions::GetLink,
         "Add Link" => UserOptions::AddLink,
         "Exit" => UserOptions::Exit,
         _ => unreachable!(),
     };
 
     match selected_item {
+        UserOptions::GetLink => user_get_link(&db)?,
         UserOptions::AddLink => user_link_input(&db)?,
         UserOptions::Exit => return Err(CustomErrors::Exit),
     }
+
+    Ok(())
+}
+
+fn user_single_link_options(db: &Db, link: &str) -> Result<(), CustomErrors> {
+    let options = vec!["Mark As Complete?", "Skip And Get Another Link?"];
+    let choice = match Select::new("Select your option", options).prompt() {
+        Ok(val) => val,
+        Err(_) => {
+            return Err(CustomErrors::Others(
+                "Error: Something went wrong while showing options".to_owned(),
+            ))
+        }
+    };
+
+    let selected_option = match choice {
+        "Mark As Complete?" => InnerOptions::MarkAsComplete,
+        "Skip And Get Another Link?" => InnerOptions::SkipAndNext,
+        _ => unreachable!(),
+    };
+
+    match selected_option {
+        InnerOptions::MarkAsComplete => db.mark_as_complete(link)?,
+        InnerOptions::SkipAndNext => db.skip_link(link)?,
+    };
+
+    Ok(())
+}
+
+fn user_get_link(db: &Db) -> Result<(), CustomErrors> {
+    let link = match db.get_single_link() {
+        Ok(val) => match val {
+            Some(link) => {
+                println!("Your Link: {}", &link);
+                link
+            }
+            None => {
+                println!("No unsolved links, add new links or reset the link status");
+                "".to_string()
+            }
+        },
+        Err(e) => return Err(e),
+    };
+
+    user_single_link_options(db, &link)?;
 
     Ok(())
 }
