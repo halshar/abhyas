@@ -107,11 +107,7 @@ fn create_file() -> Result<PathBuf, CustomErrors> {
     };
 
     let file_name = &dir_name.join("abhyas.db");
-    match OpenOptions::new()
-        .write(true)
-        .create(true)
-        .open("abhyas.db")
-    {
+    match OpenOptions::new().write(true).create(true).open(&file_name) {
         Ok(_) => (),
         Err(e) => return Err(CustomErrors::FileCreationFailed(e.to_string())),
     }
