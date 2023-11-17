@@ -19,6 +19,7 @@ pub enum CustomErrors {
 
 mod cli;
 mod database;
+mod print;
 mod utility;
 
 use cli::show_options;

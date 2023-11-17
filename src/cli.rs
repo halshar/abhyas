@@ -1,3 +1,4 @@
+use crate::print::pretty_print;
 use crate::utility::show_red;
 use crate::CustomErrors;
 use crate::{database::Db, utility::show_green};
@@ -63,13 +64,7 @@ fn get_link_options(db: &Db) -> Result<(), CustomErrors> {
     let link = match db.get_single_link() {
         Ok(val) => match val {
             Some((link, solved_count)) => {
-                show_green(
-                    format!(
-                        "Your Link: {}\nThe Link was solved: {} times",
-                        &link, solved_count
-                    )
-                    .as_str(),
-                );
+                pretty_print(&[(link.clone(), solved_count)]);
                 link
             }
             None => {
@@ -195,11 +190,7 @@ fn show_other_options(db: &Db) -> Result<(), CustomErrors> {
         OtherOptions::ShowAllLinks => match db.get_all_links() {
             Ok(val) => {
                 match val {
-                    Some(all_links) => {
-                        for (link, solved_count) in all_links {
-                            show_green(format!("Link: {}, Solved:{}", link, solved_count).as_str())
-                        }
-                    }
+                    Some(all_links) => pretty_print(&all_links),
                     None => show_red("No Links present in the database :("),
                 };
             }
