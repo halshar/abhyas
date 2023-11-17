@@ -10,3 +10,4 @@ authors = ["Harshal Jadhav <bestt1315@gmail.com>"]
 dirs = "5.0"
 rusqlite = { version = "0.30.0", features = ["bundled"] }
 inquire = "0.6.2"
+termcolor = "1.4.0"

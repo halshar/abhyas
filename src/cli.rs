@@ -1,5 +1,6 @@
-use crate::database::Db;
+use crate::utility::show_red;
 use crate::CustomErrors;
+use crate::{database::Db, utility::show_green};
 use inquire::{required, validator::Validation, Select, Text};
 
 enum MainMenuOptions {
@@ -55,11 +56,11 @@ fn get_link_options(db: &Db) -> Result<(), CustomErrors> {
     let link = match db.get_single_link() {
         Ok(val) => match val {
             Some(link) => {
-                println!("Your Link: {}", &link);
+                show_green(format!("Your Link: {}", &link).as_str());
                 link
             }
             None => {
-                println!("No unsolved links, add new links or reset the link status");
+                show_red("No unsolved links, add new links or reset the link status");
                 return Ok(());
             }
         },
@@ -105,8 +106,8 @@ fn add_link_options(db: &Db) -> Result<(), CustomErrors> {
         },
     };
 
-    match db.add_link(link) {
-        Ok(_) => println!("Successfully added the link"),
+    match db.add_link(link.clone()) {
+        Ok(_) => show_green(format!("Successfully added the link: {}", link).as_str()),
         Err(e) => return Err(e),
     };
 
@@ -140,11 +141,17 @@ fn single_link_options(db: &Db, link: &str) -> Result<(), CustomErrors> {
     loop {
         match selected_option {
             GetLinkOptions::MarkAsComplete => {
-                db.mark_as_complete(link)?;
+                match db.mark_as_complete(link) {
+                    Ok(_) => show_green("Successfully marked the link as completed"),
+                    Err(e) => return Err(e),
+                };
                 break;
             }
             GetLinkOptions::Skip => {
-                db.skip_link(link)?;
+                match db.skip_link(link) {
+                    Ok(_) => show_green("Successfully skipped the link"),
+                    Err(e) => return Err(e),
+                };
                 break;
             }
             GetLinkOptions::MainMenu => break,

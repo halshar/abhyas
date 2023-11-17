@@ -1,7 +1,9 @@
 use crate::CustomErrors;
 use rusqlite::Connection;
 use std::fs::{self, OpenOptions};
+use std::io::Write;
 use std::path::PathBuf;
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 /// create directory to store the db file
 fn create_file() -> Result<PathBuf, CustomErrors> {
@@ -50,4 +52,42 @@ pub fn create_db_connection() -> Result<Connection, CustomErrors> {
     }
 
     Ok(conn)
+}
+
+pub fn show_green(msg: &str) -> () {
+    let mut stdout = StandardStream::stdout(ColorChoice::Always);
+    match stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green))) {
+        Ok(_) => (),
+        Err(_) => {
+            println!("{}", msg);
+            return ();
+        }
+    };
+
+    match writeln!(&mut stdout, "{}", msg) {
+        Ok(_) => (),
+        Err(_) => {
+            println!("{}", msg);
+            return ();
+        }
+    };
+}
+
+pub fn show_red(msg: &str) -> () {
+    let mut stdout = StandardStream::stdout(ColorChoice::Always);
+    match stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red))) {
+        Ok(_) => (),
+        Err(_) => {
+            println!("{}", msg);
+            return ();
+        }
+    };
+
+    match writeln!(&mut stdout, "{}", msg) {
+        Ok(_) => (),
+        Err(_) => {
+            println!("{}", msg);
+            return ();
+        }
+    };
 }

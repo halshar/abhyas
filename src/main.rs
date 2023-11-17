@@ -13,6 +13,7 @@ pub enum CustomErrors {
     OperationCanceled,
     OperationInterrupted,
     Others(String),
+    WriteFailed(String),
     Exit,
 }
 
@@ -22,31 +23,26 @@ mod utility;
 
 use cli::show_options;
 use database::Db;
-use utility::create_db_connection;
+use utility::{create_db_connection, show_green, show_red};
 
 fn main() {
     let _conn: Connection = match create_db_connection() {
         Ok(value) => value,
         Err(e) => match e {
             CustomErrors::CacheDirectoryNotFound => {
-                println!("Error: The cache directory was not found");
-                return;
+                return show_red("Error: The cache directory was not found");
             }
             CustomErrors::CreateDirectoryFailed => {
-                println!("Error: Couldn't create the db directory");
-                return;
+                return show_red("Error: Couldn't create the db directory");
             }
             CustomErrors::FileCreationFailed(msg) => {
-                println!("Error: File creation failed due to:{}", msg);
-                return;
+                return show_red(format!("Error: File creation failed due to:{}", msg).as_str());
             }
             CustomErrors::DBConnectionFailed => {
-                println!("Error: DB connection failed");
-                return;
+                return show_red(format!("Error: DB connection failed").as_str());
             }
             CustomErrors::DBQueryFailed => {
-                println!("Error: DB query failed");
-                return;
+                return show_red(format!("Error: DB query failed").as_str())
             }
             _ => unreachable!(),
         },
@@ -59,24 +55,30 @@ fn main() {
             Ok(_) => (),
             Err(e) => match e {
                 CustomErrors::DuplicateLinkValue => {
-                    println!("Error: Link already exists, input other link")
+                    return show_red("Error: Link already exists, input other link");
                 }
-                CustomErrors::StatementFailed => println!("Error: Failed to execute the statement"),
+                CustomErrors::StatementFailed => {
+                    return show_red("Error: Failed to execute the statement");
+                }
                 CustomErrors::InvalidColumnName(column_name) => {
-                    println!("Error: column {} does not exist", column_name)
+                    return show_red(
+                        format!("Error: column {} does not exist", column_name).as_str(),
+                    );
                 }
                 CustomErrors::OperationCanceled => {
-                    println!("Error: User cancelled the operation");
-                    break;
+                    return show_red("Error: User cancelled the operation");
                 }
                 CustomErrors::OperationInterrupted => {
-                    println!("Error: User forcefully quit the operation");
-                    break;
+                    return show_red("Error: User forcefully quit the operation");
                 }
-                CustomErrors::Others(msg) => println!("Error: {}", msg),
+                CustomErrors::Others(msg) => {
+                    return show_red(format!("Error: {}", msg).as_str());
+                }
+                CustomErrors::WriteFailed(msg) => {
+                    return show_red(format!("Error: {}", msg).as_str());
+                }
                 CustomErrors::Exit => {
-                    println!("You've sucessfully quit the application :)");
-                    break;
+                    return show_green("You've successfully quit the application :)");
                 }
                 _ => unreachable!(),
             },
