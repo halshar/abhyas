@@ -55,8 +55,14 @@ pub fn show_options(db: &Db) -> Result<(), CustomErrors> {
 fn get_link_options(db: &Db) -> Result<(), CustomErrors> {
     let link = match db.get_single_link() {
         Ok(val) => match val {
-            Some(link) => {
-                show_green(format!("Your Link: {}", &link).as_str());
+            Some((link, solved_count)) => {
+                show_green(
+                    format!(
+                        "Your Link: {}\nThe Link was solved: {} times",
+                        &link, solved_count
+                    )
+                    .as_str(),
+                );
                 link
             }
             None => {

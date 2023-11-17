@@ -68,9 +68,9 @@ impl Db {
         Ok(links)
     }
 
-    pub fn get_single_link(&self) -> Result<Option<String>, CustomErrors> {
+    pub fn get_single_link(&self) -> Result<Option<(String, i32)>, CustomErrors> {
         let mut stmt = match self.conn.prepare(
-            "SELECT link FROM links
+            "SELECT link, solved_count FROM links
             WHERE is_solved = 0 AND is_skipped = 0
             LIMIT 1;",
         ) {
@@ -78,8 +78,12 @@ impl Db {
             Err(_) => return Err(CustomErrors::StatementFailed),
         };
 
-        match stmt.query_row([], |row| row.get(0)) {
-            Ok(val) => Ok(Some(val)),
+        match stmt.query_row([], |row| {
+            let link: String = row.get(0)?;
+            let solved_count: i32 = row.get(1)?;
+            Ok((link, solved_count))
+        }) {
+            Ok((link, solved_count)) => Ok(Some((link, solved_count))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(_) => Err(CustomErrors::Others(
                 "Error: While fetching unsolved link".to_owned(),
