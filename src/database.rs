@@ -128,4 +128,42 @@ impl Db {
 
         Ok(())
     }
+
+    pub fn get_all_links(&self) -> Result<Option<Vec<(String, i32)>>, CustomErrors> {
+        let mut stmt = match self.conn.prepare("SELECT link, solved_count FROM links;") {
+            Ok(val) => val,
+            Err(_) => return Err(CustomErrors::StatementFailed),
+        };
+
+        let rows_iter = match stmt.query_map([], |row| {
+            let link: String = row.get(0)?;
+            let solved_count: i32 = row.get(1)?;
+            Ok((link, solved_count))
+        }) {
+            Ok(val) => val,
+            Err(_) => {
+                return Err(CustomErrors::Others(
+                    "Error: While fetching all links".to_owned(),
+                ))
+            }
+        };
+
+        let mut links_solved_count_vec: Vec<(String, i32)> = vec![];
+        for row in rows_iter {
+            match row {
+                Ok(val) => links_solved_count_vec.push(val),
+                Err(_) => {
+                    return Err(CustomErrors::Others(
+                        "Error: While fetching unsolved link".to_owned(),
+                    ))
+                }
+            };
+        }
+
+        if links_solved_count_vec.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(links_solved_count_vec))
+        }
+    }
 }

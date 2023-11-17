@@ -6,6 +6,7 @@ use inquire::{required, validator::Validation, Select, Text};
 enum MainMenuOptions {
     GetLink,
     AddLink,
+    Other,
     Exit,
 }
 
@@ -16,8 +17,12 @@ enum GetLinkOptions {
     Exit,
 }
 
+enum OtherOptions {
+    ShowAllLinks,
+}
+
 pub fn show_options(db: &Db) -> Result<(), CustomErrors> {
-    let options = vec!["Get Link", "Add Link", "Exit"];
+    let options = vec!["Get Link", "Add Link", "Other", "Exit"];
 
     let user_option = match Select::new("select your option", options).prompt() {
         Ok(val) => val,
@@ -39,6 +44,7 @@ pub fn show_options(db: &Db) -> Result<(), CustomErrors> {
     let selected_item = match user_option {
         "Get Link" => MainMenuOptions::GetLink,
         "Add Link" => MainMenuOptions::AddLink,
+        "Other" => MainMenuOptions::Other,
         "Exit" => MainMenuOptions::Exit,
         _ => unreachable!(),
     };
@@ -46,6 +52,7 @@ pub fn show_options(db: &Db) -> Result<(), CustomErrors> {
     match selected_item {
         MainMenuOptions::GetLink => get_link_options(&db)?,
         MainMenuOptions::AddLink => add_link_options(&db)?,
+        MainMenuOptions::Other => show_other_options(&db)?,
         MainMenuOptions::Exit => return Err(CustomErrors::Exit),
     }
 
@@ -164,6 +171,41 @@ fn single_link_options(db: &Db, link: &str) -> Result<(), CustomErrors> {
             GetLinkOptions::Exit => return Err(CustomErrors::Exit),
         };
     }
+
+    Ok(())
+}
+
+fn show_other_options(db: &Db) -> Result<(), CustomErrors> {
+    let options = vec!["Show All Links?"];
+    let choice = match Select::new("Select your option", options).prompt() {
+        Ok(val) => val,
+        Err(_) => {
+            return Err(CustomErrors::Others(
+                "Error: Something went wrong while showing options".to_owned(),
+            ))
+        }
+    };
+
+    let selected_option = match choice {
+        "Show All Links?" => OtherOptions::ShowAllLinks,
+        _ => unreachable!(),
+    };
+
+    match selected_option {
+        OtherOptions::ShowAllLinks => match db.get_all_links() {
+            Ok(val) => {
+                match val {
+                    Some(all_links) => {
+                        for (link, solved_count) in all_links {
+                            show_green(format!("Link: {}, Solved:{}", link, solved_count).as_str())
+                        }
+                    }
+                    None => show_red("No Links present in the database :("),
+                };
+            }
+            Err(e) => return Err(e),
+        },
+    };
 
     Ok(())
 }
