@@ -3,6 +3,7 @@ use tabled::{Table, Tabled};
 
 #[derive(Tabled)]
 struct Links {
+    id: usize,
     link: String,
     solved_count: i32,
 }
@@ -10,7 +11,9 @@ struct Links {
 pub fn pretty_print(data: &[(String, i32)]) {
     let new_data: Vec<Links> = data
         .iter()
-        .map(|(link, solved_count)| Links {
+        .enumerate()
+        .map(|(id, (link, solved_count))| Links {
+            id: id + 1,
             link: link.to_string(),
             solved_count: *solved_count,
         })
