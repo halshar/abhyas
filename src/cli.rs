@@ -22,6 +22,8 @@ enum OtherOptions {
     ShowAllLinks,
     ShowCompletedLinks,
     ShowSkippedLinks,
+    MainMenu,
+    Exit,
 }
 
 pub fn show_options(db: &Db) -> Result<(), CustomErrors> {
@@ -177,6 +179,8 @@ fn show_other_options(db: &Db) -> Result<(), CustomErrors> {
         "Show All Links?",
         "Show Completed Links?",
         "Show Skipped Links?",
+        "Main Menu",
+        "Exit",
     ];
     let choice = match Select::new("Select your option", options).prompt() {
         Ok(val) => val,
@@ -191,34 +195,47 @@ fn show_other_options(db: &Db) -> Result<(), CustomErrors> {
         "Show All Links?" => OtherOptions::ShowAllLinks,
         "Show Completed Links?" => OtherOptions::ShowCompletedLinks,
         "Show Skipped Links?" => OtherOptions::ShowSkippedLinks,
+        "Main Menu" => OtherOptions::MainMenu,
+        "Exit" => OtherOptions::Exit,
         _ => unreachable!(),
     };
 
-    match selected_option {
-        OtherOptions::ShowAllLinks => match db.get_all_links() {
-            Ok(val) => {
-                match val {
-                    Some(all_links) => pretty_print(&all_links),
-                    None => show_red("No Links present in the database :("),
-                };
-            }
-            Err(e) => return Err(e),
-        },
-        OtherOptions::ShowCompletedLinks => match db.get_completed_links() {
-            Ok(val) => match val {
-                Some(completed_links) => pretty_print(&completed_links),
-                None => show_red("No Completed Links :("),
+    loop {
+        match selected_option {
+            OtherOptions::ShowAllLinks => match db.get_all_links() {
+                Ok(val) => {
+                    match val {
+                        Some(all_links) => pretty_print(&all_links),
+                        None => show_red("No Links present in the database :("),
+                    }
+                    break;
+                }
+                Err(e) => return Err(e),
             },
-            Err(e) => return Err(e),
-        },
-        OtherOptions::ShowSkippedLinks => match db.get_skipped_links() {
-            Ok(val) => match val {
-                Some(skipped_links) => pretty_print(&skipped_links),
-                None => show_red("No Skipped Links :)"),
+            OtherOptions::ShowCompletedLinks => match db.get_completed_links() {
+                Ok(val) => {
+                    match val {
+                        Some(completed_links) => pretty_print(&completed_links),
+                        None => show_red("No Completed Links :("),
+                    }
+                    break;
+                }
+                Err(e) => return Err(e),
             },
-            Err(e) => return Err(e),
-        },
-    };
+            OtherOptions::ShowSkippedLinks => match db.get_skipped_links() {
+                Ok(val) => {
+                    match val {
+                        Some(skipped_links) => pretty_print(&skipped_links),
+                        None => show_red("No Skipped Links :)"),
+                    }
+                    break;
+                }
+                Err(e) => return Err(e),
+            },
+            OtherOptions::MainMenu => break,
+            OtherOptions::Exit => return Err(CustomErrors::Exit),
+        }
+    }
 
     Ok(())
 }
