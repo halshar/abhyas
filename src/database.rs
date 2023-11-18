@@ -166,4 +166,88 @@ impl Db {
             Ok(Some(links_solved_count_vec))
         }
     }
+
+    /// returns only the completed links along with their solved_count
+    pub fn get_completed_links(&self) -> Result<Option<Vec<(String, i32)>>, CustomErrors> {
+        let mut stmt = match self
+            .conn
+            .prepare("SELECT link, solved_count FROM links where is_solved = 1;")
+        {
+            Ok(val) => val,
+            Err(_) => return Err(CustomErrors::StatementFailed),
+        };
+
+        let rows_iter = match stmt.query_map([], |row| {
+            let link: String = row.get(0)?;
+            let solved_count: i32 = row.get(1)?;
+            Ok((link, solved_count))
+        }) {
+            Ok(val) => val,
+            Err(_) => {
+                return Err(CustomErrors::Others(
+                    "Error: While fetching completed links".to_owned(),
+                ))
+            }
+        };
+
+        let mut links_completed_vec: Vec<(String, i32)> = vec![];
+        for row in rows_iter {
+            match row {
+                Ok(val) => links_completed_vec.push(val),
+                Err(_) => {
+                    return Err(CustomErrors::Others(
+                        "Error: While fetching completed link".to_owned(),
+                    ))
+                }
+            };
+        }
+
+        if links_completed_vec.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(links_completed_vec))
+        }
+    }
+
+    /// returns only the skipped links along with their solved_count
+    pub fn get_skipped_links(&self) -> Result<Option<Vec<(String, i32)>>, CustomErrors> {
+        let mut stmt = match self
+            .conn
+            .prepare("SELECT link, solved_count from links WHERE is_skipped = 1;")
+        {
+            Ok(val) => val,
+            Err(_) => return Err(CustomErrors::StatementFailed),
+        };
+
+        let rows_iter = match stmt.query_map([], |row| {
+            let link: String = row.get(0)?;
+            let solved_count: i32 = row.get(1)?;
+            Ok((link, solved_count))
+        }) {
+            Ok(val) => val,
+            Err(_) => {
+                return Err(CustomErrors::Others(
+                    "Error: While fetching all skipped links".to_owned(),
+                ))
+            }
+        };
+
+        let mut skipped_links_vec: Vec<(String, i32)> = vec![];
+        for row in rows_iter {
+            match row {
+                Ok(val) => skipped_links_vec.push(val),
+                Err(_) => {
+                    return Err(CustomErrors::Others(
+                        "Error: While fetching all skipped links".to_owned(),
+                    ))
+                }
+            };
+        }
+
+        if skipped_links_vec.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(skipped_links_vec))
+        }
+    }
 }

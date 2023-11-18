@@ -20,6 +20,8 @@ enum GetLinkOptions {
 
 enum OtherOptions {
     ShowAllLinks,
+    ShowCompletedLinks,
+    ShowSkippedLinks,
 }
 
 pub fn show_options(db: &Db) -> Result<(), CustomErrors> {
@@ -171,7 +173,11 @@ fn single_link_options(db: &Db, link: &str) -> Result<(), CustomErrors> {
 }
 
 fn show_other_options(db: &Db) -> Result<(), CustomErrors> {
-    let options = vec!["Show All Links?"];
+    let options = vec![
+        "Show All Links?",
+        "Show Completed Links?",
+        "Show Skipped Links?",
+    ];
     let choice = match Select::new("Select your option", options).prompt() {
         Ok(val) => val,
         Err(_) => {
@@ -183,6 +189,8 @@ fn show_other_options(db: &Db) -> Result<(), CustomErrors> {
 
     let selected_option = match choice {
         "Show All Links?" => OtherOptions::ShowAllLinks,
+        "Show Completed Links?" => OtherOptions::ShowCompletedLinks,
+        "Show Skipped Links?" => OtherOptions::ShowSkippedLinks,
         _ => unreachable!(),
     };
 
@@ -194,6 +202,20 @@ fn show_other_options(db: &Db) -> Result<(), CustomErrors> {
                     None => show_red("No Links present in the database :("),
                 };
             }
+            Err(e) => return Err(e),
+        },
+        OtherOptions::ShowCompletedLinks => match db.get_completed_links() {
+            Ok(val) => match val {
+                Some(completed_links) => pretty_print(&completed_links),
+                None => show_red("No Completed Links :("),
+            },
+            Err(e) => return Err(e),
+        },
+        OtherOptions::ShowSkippedLinks => match db.get_skipped_links() {
+            Ok(val) => match val {
+                Some(skipped_links) => pretty_print(&skipped_links),
+                None => show_red("No Skipped Links :)"),
+            },
             Err(e) => return Err(e),
         },
     };
