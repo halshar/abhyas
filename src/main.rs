@@ -1,7 +1,5 @@
-use rusqlite::Connection;
-
-#[derive(Debug)]
 pub enum CustomErrors {
+    InsufficientArgs,
     CacheDirectoryNotFound,
     CreateDirectoryFailed,
     FileCreationFailed(String),
@@ -22,67 +20,25 @@ mod database;
 mod print;
 mod utility;
 
-use cli::show_options;
-use database::Db;
-use utility::{create_db_connection, show_green, show_red};
+use utility::{run, show_green, show_red};
 
 fn main() {
-    let _conn: Connection = match create_db_connection() {
-        Ok(value) => value,
-        Err(e) => match e {
-            CustomErrors::CacheDirectoryNotFound => {
-                return show_red("Error: The cache directory was not found");
-            }
-            CustomErrors::CreateDirectoryFailed => {
-                return show_red("Error: Couldn't create the db directory");
-            }
-            CustomErrors::FileCreationFailed(msg) => {
-                return show_red(format!("Error: File creation failed due to:{}", msg).as_str());
-            }
-            CustomErrors::DBConnectionFailed => {
-                return show_red(format!("Error: DB connection failed").as_str());
-            }
-            CustomErrors::DBQueryFailed => {
-                return show_red(format!("Error: DB query failed").as_str())
-            }
-            _ => unreachable!(),
-        },
-    };
-
-    let db = Db::new(_conn);
-
-    loop {
-        match show_options(&db) {
-            Ok(_) => (),
-            Err(e) => match e {
-                CustomErrors::DuplicateLinkValue => {
-                    return show_red("Error: Link already exists, input other link");
-                }
-                CustomErrors::StatementFailed => {
-                    return show_red("Error: Failed to execute the statement");
-                }
-                CustomErrors::InvalidColumnName(column_name) => {
-                    return show_red(
-                        format!("Error: column {} does not exist", column_name).as_str(),
-                    );
-                }
-                CustomErrors::OperationCanceled => {
-                    return show_red("Error: User cancelled the operation");
-                }
-                CustomErrors::OperationInterrupted => {
-                    return show_red("Error: User forcefully quit the operation");
-                }
-                CustomErrors::Others(msg) => {
-                    return show_red(format!("Error: {}", msg).as_str());
-                }
-                CustomErrors::WriteFailed(msg) => {
-                    return show_red(format!("Error: {}", msg).as_str());
-                }
-                CustomErrors::Exit => {
-                    return show_green("You've successfully quit the application :)");
-                }
-                _ => unreachable!(),
-            },
-        }
+    if let Err(e) = run() {
+        match e {
+            CustomErrors::InsufficientArgs => show_red("Usage:\nabhyas = Normal binary execution\nabhyas --file <file_name> = To add links from file"),
+            CustomErrors::CacheDirectoryNotFound => show_red("Error: The cache directory was not found"),
+            CustomErrors::CreateDirectoryFailed => show_red("Error: Couldn't create the db directory"),
+            CustomErrors::FileCreationFailed(msg) => show_red(&format!("Error: File creation failed due to: {}", msg)),
+            CustomErrors::DBConnectionFailed => show_red("Error: DB connection failed"),
+            CustomErrors::DBQueryFailed => show_red("Error: DB query failed"),
+            CustomErrors::DuplicateLinkValue => show_red("Error: Link already exists, input other link"),
+            CustomErrors::StatementFailed => show_red("Error: Failed to execute the statement"),
+            CustomErrors::InvalidColumnName(column_name) => show_red(&format!("Error: column {} does not exist", column_name)),
+            CustomErrors::OperationCanceled => show_red("Error: User cancelled the operation"),
+            CustomErrors::OperationInterrupted => show_red("Error: User forcefully quit the operation"),
+            CustomErrors::Others(msg) => show_red(&format!("Error: {}", msg)),
+            CustomErrors::WriteFailed(msg) => show_red(&format!("Error: {}", msg)),
+            CustomErrors::Exit => show_green("You've successfully quit the application :)"),
+        };
     }
 }

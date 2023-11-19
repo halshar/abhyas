@@ -272,4 +272,29 @@ impl Db {
                 )
             })
     }
+
+    /// add non-duplicate links from the file passed as argument
+    pub fn insert_links_from_file(&self, links: &[String]) -> Result<usize, CustomErrors> {
+        let values: String = links
+            .iter()
+            .map(|link| format!("('{}', 0, 0, 0)", link))
+            .collect::<Vec<String>>()
+            .join(",");
+
+        let query = format!(
+            "INSERT OR IGNORE INTO links (link, solved_count, is_solved, is_skipped) VALUES {}",
+            values
+        );
+
+        let rows_updated_count = match self.conn.execute(&query, ()) {
+            Ok(val) => val,
+            Err(_) => {
+                return Err(CustomErrors::Others(
+                    "Error: Something went wrong while inserting links from file".to_owned(),
+                ));
+            }
+        };
+
+        Ok(rows_updated_count)
+    }
 }
