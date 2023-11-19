@@ -22,6 +22,8 @@ enum OtherOptions {
     ShowAllLinks,
     ShowCompletedLinks,
     ShowSkippedLinks,
+    SkippedToIncomplete,
+    CompletedToIncomplete,
     MainMenu,
     Exit,
 }
@@ -179,6 +181,8 @@ fn show_other_options(db: &Db) -> Result<(), CustomErrors> {
         "Show All Links?",
         "Show Completed Links?",
         "Show Skipped Links?",
+        "Change All Skipped Links to Incomplete?",
+        "Change All Completed Links to Incomplete?",
         "Main Menu",
         "Exit",
     ];
@@ -195,6 +199,8 @@ fn show_other_options(db: &Db) -> Result<(), CustomErrors> {
         "Show All Links?" => OtherOptions::ShowAllLinks,
         "Show Completed Links?" => OtherOptions::ShowCompletedLinks,
         "Show Skipped Links?" => OtherOptions::ShowSkippedLinks,
+        "Change All Skipped Links to Incomplete?" => OtherOptions::SkippedToIncomplete,
+        "Change All Completed Links to Incomplete?" => OtherOptions::CompletedToIncomplete,
         "Main Menu" => OtherOptions::MainMenu,
         "Exit" => OtherOptions::Exit,
         _ => unreachable!(),
@@ -232,6 +238,24 @@ fn show_other_options(db: &Db) -> Result<(), CustomErrors> {
                 }
                 Err(e) => return Err(e),
             },
+            OtherOptions::SkippedToIncomplete => {
+                match db.skipped_to_incomplete() {
+                    Ok(count) => show_green(
+                        format!("Changed {} Skipped Links To Incomplete Links", count).as_str(),
+                    ),
+                    Err(e) => return Err(e),
+                };
+                break;
+            }
+            OtherOptions::CompletedToIncomplete => {
+                match db.completed_to_incomplete() {
+                    Ok(count) => show_green(
+                        format!("Changed {} Completed Links To Incomplete Links", count).as_str(),
+                    ),
+                    Err(e) => return Err(e),
+                };
+                break;
+            }
             OtherOptions::MainMenu => break,
             OtherOptions::Exit => return Err(CustomErrors::Exit),
         }

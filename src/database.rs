@@ -250,4 +250,26 @@ impl Db {
             Ok(Some(skipped_links_vec))
         }
     }
+
+    /// mark all skiped links as incomplete links
+    pub fn skipped_to_incomplete(&self) -> Result<usize, CustomErrors> {
+        self.conn
+            .execute("UPDATE links SET is_skipped = 0 WHERE is_skipped = 1;", ())
+            .map_err(|_| {
+                CustomErrors::Others(
+                    "Error: While trying to change all skipped links to incomplete".to_owned(),
+                )
+            })
+    }
+
+    /// mark all completed links as incomplete links
+    pub fn completed_to_incomplete(&self) -> Result<usize, CustomErrors> {
+        self.conn
+            .execute("UPDATE links SET is_solved = 0 WHERE is_solved = 1;", ())
+            .map_err(|_| {
+                CustomErrors::Others(
+                    "Error: While trying to change all completed links to incomplete".to_owned(),
+                )
+            })
+    }
 }
