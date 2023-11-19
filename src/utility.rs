@@ -56,38 +56,26 @@ pub fn create_db_connection() -> Result<Connection, CustomErrors> {
 
 pub fn show_green(msg: &str) -> () {
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
-    match stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green))) {
-        Ok(_) => (),
-        Err(_) => {
-            println!("{}", msg);
-            return ();
-        }
-    };
 
-    match writeln!(&mut stdout, "{}", msg) {
-        Ok(_) => (),
-        Err(_) => {
-            println!("{}", msg);
-            return ();
-        }
-    };
+    if let Err(_) = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green))) {
+        println!("{}", msg);
+        return;
+    }
+
+    if let Err(_) = writeln!(&mut stdout, "{}", msg) {
+        println!("{}", msg);
+    }
 }
 
 pub fn show_red(msg: &str) -> () {
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
-    match stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red))) {
-        Ok(_) => (),
-        Err(_) => {
-            println!("{}", msg);
-            return ();
-        }
-    };
 
-    match writeln!(&mut stdout, "{}", msg) {
-        Ok(_) => (),
-        Err(_) => {
-            println!("{}", msg);
-            return ();
-        }
-    };
+    if let Err(_) = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red))) {
+        println!("{}", msg);
+        return;
+    }
+
+    if let Err(_) = writeln!(&mut stdout, "{}", msg) {
+        println!("{}", msg);
+    }
 }
