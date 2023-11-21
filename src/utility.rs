@@ -125,7 +125,8 @@ pub fn run() -> Result<(), CustomErrors> {
             Ok(val) => show_green(
                 format!(
                     "Inserted {} New Links\nSkipped {} Duplicate Links",
-                    val, links_count
+                    val,
+                    links_count - val
                 )
                 .as_str(),
             ),

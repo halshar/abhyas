@@ -1,6 +1,6 @@
 [package]
 name = "abhyas"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 authors = ["Harshal Jadhav <bestt1315@gmail.com>"]
 homepage = "https://github.com/halshar/abhyas"
