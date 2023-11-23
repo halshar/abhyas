@@ -7,6 +7,7 @@ use inquire::{required, validator::Validation, Select, Text};
 enum MainMenuOptions {
     GetLink,
     AddLink,
+    SearchLink,
     Other,
     Exit,
 }
@@ -29,7 +30,7 @@ enum OtherOptions {
 }
 
 pub fn show_options(db: &Db) -> Result<(), CustomErrors> {
-    let options = vec!["Get Link", "Add Link", "Other", "Exit"];
+    let options = vec!["Get Link", "Add Link", "Search Link", "Other", "Exit"];
 
     let user_option = match Select::new("select your option", options).prompt() {
         Ok(val) => val,
@@ -51,6 +52,7 @@ pub fn show_options(db: &Db) -> Result<(), CustomErrors> {
     let selected_item = match user_option {
         "Get Link" => MainMenuOptions::GetLink,
         "Add Link" => MainMenuOptions::AddLink,
+        "Search Link" => MainMenuOptions::SearchLink,
         "Other" => MainMenuOptions::Other,
         "Exit" => MainMenuOptions::Exit,
         _ => unreachable!(),
@@ -59,6 +61,7 @@ pub fn show_options(db: &Db) -> Result<(), CustomErrors> {
     match selected_item {
         MainMenuOptions::GetLink => get_link_options(&db)?,
         MainMenuOptions::AddLink => add_link_options(&db)?,
+        MainMenuOptions::SearchLink => search_link_options(&db)?,
         MainMenuOptions::Other => show_other_options(&db)?,
         MainMenuOptions::Exit => return Err(CustomErrors::Exit),
     }
@@ -172,6 +175,23 @@ fn single_link_options(db: &Db, link: &str) -> Result<(), CustomErrors> {
             GetLinkOptions::Exit => return Err(CustomErrors::Exit),
         };
     }
+
+    Ok(())
+}
+
+fn search_link_options(db: &Db) -> Result<(), CustomErrors> {
+    let links = db.get_links()?;
+
+    let link = match Select::new("select link or type keywords", links).prompt() {
+        Ok(val) => val,
+        Err(_) => {
+            return Err(CustomErrors::Others(
+                "Error: Something went wrong while searching links".to_owned(),
+            ))
+        }
+    };
+
+    single_link_options(db, &link)?;
 
     Ok(())
 }

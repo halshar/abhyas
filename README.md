@@ -4,8 +4,10 @@ Abhyas is a Rust command-line application for managing and interacting with a da
 
 ### Features
 
-- **Add Links**: Add new links to the database.
-- **Show Options**: View and interact with available options.
+- **Get Link**: Get random link from the database.
+- **Add Link**: Add new links to the database.
+- **Search Link**: Search link from the database.
+- **Other**: View and interact with other available options.
 - **Insert Links from File**: Add links from a specified file to the database.
 
 ### Requirements
