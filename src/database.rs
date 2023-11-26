@@ -12,6 +12,35 @@ impl Db {
         Db { conn }
     }
 
+    /// get total, completed, and skipped links count
+    pub fn get_status(&self) -> Result<Option<(i32, i32, i32)>, CustomErrors> {
+        let mut stmt = match self.conn.prepare(
+            "SELECT
+                COALESCE(COUNT(*), 0) AS total_links,
+                COALESCE(SUM(CASE WHEN is_solved = 1 THEN 1 ELSE 0 END), 0) AS completed_links,
+                COALESCE(SUM(CASE WHEN is_skipped = 1 THEN 1 ELSE 0 END), 0) AS skipped_links
+            FROM links",
+        ) {
+            Ok(val) => val,
+            Err(_) => return Err(CustomErrors::StatementFailed),
+        };
+
+        match stmt.query_row([], |row| {
+            let total_links: i32 = row.get(0)?;
+            let completed_links: i32 = row.get(1)?;
+            let skipped_links: i32 = row.get(2)?;
+            Ok((total_links, completed_links, skipped_links))
+        }) {
+            Ok((total_links, completed_links, skipped_links)) => {
+                Ok(Some((total_links, completed_links, skipped_links)))
+            }
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(_) => Err(CustomErrors::Others(
+                "Error: Something went wrong while checking the status".to_owned(),
+            )),
+        }
+    }
+
     /// add new links into the db
     pub fn add_link(&self, link: String) -> Result<(), CustomErrors> {
         match self.conn.execute(

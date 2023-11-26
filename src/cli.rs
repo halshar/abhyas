@@ -1,10 +1,11 @@
-use crate::print::pretty_print;
+use crate::print::{pretty_print, pretty_status};
 use crate::utility::show_red;
 use crate::CustomErrors;
 use crate::{database::Db, utility::show_green};
 use inquire::{required, validator::Validation, Select, Text};
 
 enum MainMenuOptions {
+    Status,
     GetLink,
     AddLink,
     SearchLink,
@@ -30,7 +31,14 @@ enum OtherOptions {
 }
 
 pub fn show_options(db: &Db) -> Result<(), CustomErrors> {
-    let options = vec!["Get Link", "Add Link", "Search Link", "Other", "Exit"];
+    let options = vec![
+        "Check Status",
+        "Get Link",
+        "Add Link",
+        "Search Link",
+        "Other",
+        "Exit",
+    ];
 
     let user_option = match Select::new("select your option", options).prompt() {
         Ok(val) => val,
@@ -50,6 +58,7 @@ pub fn show_options(db: &Db) -> Result<(), CustomErrors> {
     };
 
     let selected_item = match user_option {
+        "Check Status" => MainMenuOptions::Status,
         "Get Link" => MainMenuOptions::GetLink,
         "Add Link" => MainMenuOptions::AddLink,
         "Search Link" => MainMenuOptions::SearchLink,
@@ -59,6 +68,7 @@ pub fn show_options(db: &Db) -> Result<(), CustomErrors> {
     };
 
     match selected_item {
+        MainMenuOptions::Status => get_status(&db)?,
         MainMenuOptions::GetLink => get_link_options(&db)?,
         MainMenuOptions::AddLink => add_link_options(&db)?,
         MainMenuOptions::SearchLink => search_link_options(&db)?,
@@ -66,6 +76,21 @@ pub fn show_options(db: &Db) -> Result<(), CustomErrors> {
         MainMenuOptions::Exit => return Err(CustomErrors::Exit),
     }
 
+    Ok(())
+}
+
+fn get_status(db: &Db) -> Result<(), CustomErrors> {
+    match db.get_status() {
+        Ok(val) => {
+            match val {
+                Some((total_links, completed_links, skipped_links)) => {
+                    pretty_status(total_links, completed_links, skipped_links)
+                }
+                None => pretty_status(0, 0, 0),
+            };
+        }
+        Err(e) => return Err(e),
+    };
     Ok(())
 }
 
