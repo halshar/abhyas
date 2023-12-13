@@ -70,6 +70,22 @@ impl Db {
         }
     }
 
+    /// delete link from the db
+    pub fn delete_link(&self, link: String) -> Result<(), CustomErrors> {
+        match self
+            .conn
+            .execute("DELETE FROM links WHERE link = ?1", [&link])
+        {
+            Ok(_) => (),
+            Err(_) => {
+                return Err(CustomErrors::Others(
+                    "Error: Something went wrong while deleting the selected link".to_owned(),
+                ))
+            }
+        }
+        Ok(())
+    }
+
     pub fn get_links(&self) -> Result<Vec<String>, CustomErrors> {
         let mut stmt = match self.conn.prepare("SELECT link FROM links") {
             Ok(val) => val,

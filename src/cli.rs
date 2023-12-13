@@ -8,8 +8,15 @@ enum MainMenuOptions {
     Status,
     GetLink,
     AddLink,
+    DeleteLink,
     SearchLink,
     Other,
+    Exit,
+}
+
+enum DeleteOptions {
+    DeleteLink,
+    MainMenu,
     Exit,
 }
 
@@ -35,6 +42,7 @@ pub fn show_options(db: &Db) -> Result<(), CustomErrors> {
         "Check Status",
         "Get Link",
         "Add Link",
+        "Delete Link",
         "Search Link",
         "Other",
         "Exit",
@@ -61,6 +69,7 @@ pub fn show_options(db: &Db) -> Result<(), CustomErrors> {
         "Check Status" => MainMenuOptions::Status,
         "Get Link" => MainMenuOptions::GetLink,
         "Add Link" => MainMenuOptions::AddLink,
+        "Delete Link" => MainMenuOptions::DeleteLink,
         "Search Link" => MainMenuOptions::SearchLink,
         "Other" => MainMenuOptions::Other,
         "Exit" => MainMenuOptions::Exit,
@@ -71,6 +80,7 @@ pub fn show_options(db: &Db) -> Result<(), CustomErrors> {
         MainMenuOptions::Status => get_status(&db)?,
         MainMenuOptions::GetLink => get_link_options(&db)?,
         MainMenuOptions::AddLink => add_link_options(&db)?,
+        MainMenuOptions::DeleteLink => delete_link_options(&db)?,
         MainMenuOptions::SearchLink => search_link_options(&db)?,
         MainMenuOptions::Other => show_other_options(&db)?,
         MainMenuOptions::Exit => return Err(CustomErrors::Exit),
@@ -152,6 +162,53 @@ fn add_link_options(db: &Db) -> Result<(), CustomErrors> {
         Ok(_) => show_green(format!("Successfully added the link: {}", link).as_str()),
         Err(e) => return Err(e),
     };
+
+    Ok(())
+}
+
+fn delete_link_options(db: &Db) -> Result<(), CustomErrors> {
+    let links = db.get_links()?;
+
+    let link = match Select::new("select link to delete", links).prompt() {
+        Ok(val) => val,
+        Err(_) => {
+            return Err(CustomErrors::Others(
+                "Error: Something went wrong while deleting links".to_owned(),
+            ))
+        }
+    };
+
+    let options = vec!["Delete Link", "Main Menu", "Exit"];
+
+    let choice = match Select::new("select your option", options).prompt() {
+        Ok(val) => val,
+        Err(_) => {
+            return Err(CustomErrors::Others(
+                "Error: Something went wrong while showing delete options".to_owned(),
+            ))
+        }
+    };
+
+    let selected_option = match choice {
+        "Delete Link" => DeleteOptions::DeleteLink,
+        "Main Menu" => DeleteOptions::MainMenu,
+        "Exit" => DeleteOptions::Exit,
+        _ => unreachable!(),
+    };
+
+    loop {
+        match selected_option {
+            DeleteOptions::DeleteLink => {
+                match db.delete_link(link) {
+                    Ok(_) => show_green("Successfully deleted the link"),
+                    Err(e) => return Err(e),
+                };
+                break;
+            }
+            DeleteOptions::MainMenu => break,
+            DeleteOptions::Exit => return Err(CustomErrors::Exit),
+        };
+    }
 
     Ok(())
 }
