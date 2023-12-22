@@ -136,6 +136,27 @@ impl Db {
         }
     }
 
+    pub fn get_searched_link_count(&self, link: &str) -> Result<Option<i32>, CustomErrors> {
+        let mut stmt = match self.conn.prepare(
+            "SELECT solved_count FROM links
+            WHERE link = ?1;",
+        ) {
+            Ok(val) => val,
+            Err(_) => return Err(CustomErrors::StatementFailed),
+        };
+
+        match stmt.query_row([&link], |row| {
+            let solved_count: i32 = row.get(0)?;
+            Ok(solved_count)
+        }) {
+            Ok(solved_count) => Ok(Some(solved_count)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(_) => Err(CustomErrors::Others(
+                "Error: Something went wrong while fetching link count".to_owned(),
+            )),
+        }
+    }
+
     pub fn mark_as_complete(&self, link: &str) -> Result<(), CustomErrors> {
         match self.conn.execute(
             "UPDATE links

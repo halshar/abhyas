@@ -1,12 +1,12 @@
 [package]
 name = "abhyas"
-version = "1.2.0"
+version = "1.4.0"
 edition = "2021"
 authors = ["Harshal Jadhav <bestt1315@gmail.com>"]
 homepage = "https://github.com/halshar/abhyas"
 description = "Abhyas is a Rust command-line application for managing and interacting with a database of links."
 readme = "README.md"
-repository = "https://github.com/halshar/abhyas" 
+repository = "https://github.com/halshar/abhyas"
 license = "GPL-3.0-or-later"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

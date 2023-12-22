@@ -273,6 +273,14 @@ fn search_link_options(db: &Db) -> Result<(), CustomErrors> {
         }
     };
 
+    match db.get_searched_link_count(&link) {
+        Ok(val) => match val {
+            Some(solved_count) => pretty_print(&[(link.clone(), solved_count)]),
+            None => pretty_print(&[(link.clone(), 0)]),
+        },
+        Err(e) => return Err(e),
+    };
+
     single_link_options(db, &link)?;
 
     Ok(())
