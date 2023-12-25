@@ -77,12 +77,12 @@ pub fn show_options(db: &Db) -> Result<(), CustomErrors> {
     };
 
     match selected_item {
-        MainMenuOptions::Status => get_status(&db)?,
-        MainMenuOptions::GetLink => get_link_options(&db)?,
-        MainMenuOptions::AddLink => add_link_options(&db)?,
-        MainMenuOptions::DeleteLink => delete_link_options(&db)?,
-        MainMenuOptions::SearchLink => search_link_options(&db)?,
-        MainMenuOptions::Other => show_other_options(&db)?,
+        MainMenuOptions::Status => get_status(db)?,
+        MainMenuOptions::GetLink => get_link_options(db)?,
+        MainMenuOptions::AddLink => add_link_options(db)?,
+        MainMenuOptions::DeleteLink => delete_link_options(db)?,
+        MainMenuOptions::SearchLink => search_link_options(db)?,
+        MainMenuOptions::Other => show_other_options(db)?,
         MainMenuOptions::Exit => return Err(CustomErrors::Exit),
     }
 
@@ -196,19 +196,16 @@ fn delete_link_options(db: &Db) -> Result<(), CustomErrors> {
         _ => unreachable!(),
     };
 
-    loop {
-        match selected_option {
-            DeleteOptions::DeleteLink => {
-                match db.delete_link(link) {
-                    Ok(_) => show_green("Successfully deleted the link"),
-                    Err(e) => return Err(e),
-                };
-                break;
-            }
-            DeleteOptions::MainMenu => break,
-            DeleteOptions::Exit => return Err(CustomErrors::Exit),
-        };
-    }
+    match selected_option {
+        DeleteOptions::DeleteLink => {
+            match db.delete_link(link) {
+                Ok(_) => show_green("Successfully deleted the link"),
+                Err(e) => return Err(e),
+            };
+        }
+        DeleteOptions::MainMenu => (),
+        DeleteOptions::Exit => return Err(CustomErrors::Exit),
+    };
 
     Ok(())
 }
@@ -237,26 +234,22 @@ fn single_link_options(db: &Db, link: &str) -> Result<(), CustomErrors> {
         _ => unreachable!(),
     };
 
-    loop {
-        match selected_option {
-            GetLinkOptions::MarkAsComplete => {
-                match db.mark_as_complete(link) {
-                    Ok(_) => show_green("Successfully marked the link as completed"),
-                    Err(e) => return Err(e),
-                };
-                break;
-            }
-            GetLinkOptions::Skip => {
-                match db.skip_link(link) {
-                    Ok(_) => show_green("Successfully skipped the link"),
-                    Err(e) => return Err(e),
-                };
-                break;
-            }
-            GetLinkOptions::MainMenu => break,
-            GetLinkOptions::Exit => return Err(CustomErrors::Exit),
-        };
-    }
+    match selected_option {
+        GetLinkOptions::MarkAsComplete => {
+            match db.mark_as_complete(link) {
+                Ok(_) => show_green("Successfully marked the link as completed"),
+                Err(e) => return Err(e),
+            };
+        }
+        GetLinkOptions::Skip => {
+            match db.skip_link(link) {
+                Ok(_) => show_green("Successfully skipped the link"),
+                Err(e) => return Err(e),
+            };
+        }
+        GetLinkOptions::MainMenu => (),
+        GetLinkOptions::Exit => return Err(CustomErrors::Exit),
+    };
 
     Ok(())
 }
@@ -316,59 +309,46 @@ fn show_other_options(db: &Db) -> Result<(), CustomErrors> {
         _ => unreachable!(),
     };
 
-    loop {
-        match selected_option {
-            OtherOptions::ShowAllLinks => match db.get_all_links() {
-                Ok(val) => {
-                    match val {
-                        Some(all_links) => pretty_print(&all_links),
-                        None => show_red("No Links present in the database :("),
-                    }
-                    break;
-                }
-                Err(e) => return Err(e),
+    match selected_option {
+        OtherOptions::ShowAllLinks => match db.get_all_links() {
+            Ok(val) => match val {
+                Some(all_links) => pretty_print(&all_links),
+                None => show_red("No Links present in the database :("),
             },
-            OtherOptions::ShowCompletedLinks => match db.get_completed_links() {
-                Ok(val) => {
-                    match val {
-                        Some(completed_links) => pretty_print(&completed_links),
-                        None => show_red("No Completed Links :("),
-                    }
-                    break;
-                }
-                Err(e) => return Err(e),
+            Err(e) => return Err(e),
+        },
+        OtherOptions::ShowCompletedLinks => match db.get_completed_links() {
+            Ok(val) => match val {
+                Some(completed_links) => pretty_print(&completed_links),
+                None => show_red("No Completed Links :("),
             },
-            OtherOptions::ShowSkippedLinks => match db.get_skipped_links() {
-                Ok(val) => {
-                    match val {
-                        Some(skipped_links) => pretty_print(&skipped_links),
-                        None => show_red("No Skipped Links :)"),
-                    }
-                    break;
-                }
-                Err(e) => return Err(e),
+            Err(e) => return Err(e),
+        },
+        OtherOptions::ShowSkippedLinks => match db.get_skipped_links() {
+            Ok(val) => match val {
+                Some(skipped_links) => pretty_print(&skipped_links),
+                None => show_red("No Skipped Links :)"),
             },
-            OtherOptions::SkippedToIncomplete => {
-                match db.skipped_to_incomplete() {
-                    Ok(count) => show_green(
-                        format!("Changed {} Skipped Links To Incomplete Links", count).as_str(),
-                    ),
-                    Err(e) => return Err(e),
-                };
-                break;
-            }
-            OtherOptions::CompletedToIncomplete => {
-                match db.completed_to_incomplete() {
-                    Ok(count) => show_green(
-                        format!("Changed {} Completed Links To Incomplete Links", count).as_str(),
-                    ),
-                    Err(e) => return Err(e),
-                };
-                break;
-            }
-            OtherOptions::MainMenu => break,
-            OtherOptions::Exit => return Err(CustomErrors::Exit),
+            Err(e) => return Err(e),
+        },
+        OtherOptions::SkippedToIncomplete => {
+            match db.skipped_to_incomplete() {
+                Ok(count) => show_green(
+                    format!("Changed {} Skipped Links To Incomplete Links", count).as_str(),
+                ),
+                Err(e) => return Err(e),
+            };
         }
+        OtherOptions::CompletedToIncomplete => {
+            match db.completed_to_incomplete() {
+                Ok(count) => show_green(
+                    format!("Changed {} Completed Links To Incomplete Links", count).as_str(),
+                ),
+                Err(e) => return Err(e),
+            };
+        }
+        OtherOptions::MainMenu => (),
+        OtherOptions::Exit => return Err(CustomErrors::Exit),
     }
 
     Ok(())

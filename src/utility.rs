@@ -17,13 +17,13 @@ fn create_file() -> Result<PathBuf, CustomErrors> {
     };
 
     let dir_name = &cache_dir.join("abhyas");
-    match fs::create_dir_all(&dir_name) {
+    match fs::create_dir_all(dir_name) {
         Ok(_) => (),
         Err(_) => return Err(CustomErrors::CreateDirectoryFailed),
     };
 
     let file_name = &dir_name.join("abhyas.db");
-    match OpenOptions::new().write(true).create(true).open(&file_name) {
+    match OpenOptions::new().write(true).create(true).open(file_name) {
         Ok(_) => (),
         Err(e) => return Err(CustomErrors::FileCreationFailed(e.to_string())),
     }
@@ -58,28 +58,34 @@ fn create_db_connection() -> Result<Connection, CustomErrors> {
     Ok(conn)
 }
 
-pub fn show_green(msg: &str) -> () {
+pub fn show_green(msg: &str) {
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
 
-    if let Err(_) = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green))) {
+    if stdout
+        .set_color(ColorSpec::new().set_fg(Some(Color::Green)))
+        .is_err()
+    {
         println!("{}", msg);
         return;
     }
 
-    if let Err(_) = writeln!(&mut stdout, "{}", msg) {
+    if writeln!(&mut stdout, "{}", msg).is_err() {
         println!("{}", msg);
     }
 }
 
-pub fn show_red(msg: &str) -> () {
+pub fn show_red(msg: &str) {
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
 
-    if let Err(_) = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red))) {
+    if stdout
+        .set_color(ColorSpec::new().set_fg(Some(Color::Red)))
+        .is_err()
+    {
         println!("{}", msg);
         return;
     }
 
-    if let Err(_) = writeln!(&mut stdout, "{}", msg) {
+    if writeln!(&mut stdout, "{}", msg).is_err() {
         println!("{}", msg);
     }
 }

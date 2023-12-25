@@ -54,18 +54,16 @@ impl Db {
                         && (err.extended_code == SQLITE_CONSTRAINT_PRIMARYKEY
                             || err.extended_code == SQLITE_CONSTRAINT_UNIQUE)
                     {
-                        return Err(CustomErrors::DuplicateLinkValue);
+                        Err(CustomErrors::DuplicateLinkValue)
                     } else {
-                        return Err(CustomErrors::Others(
+                        Err(CustomErrors::Others(
                             "Error: Something went wrong while inserting link".to_owned(),
-                        ));
+                        ))
                     }
                 }
-                _ => {
-                    return Err(CustomErrors::Others(
-                        "Error: Something went wrong while inserting link".to_owned(),
-                    ))
-                }
+                _ => Err(CustomErrors::Others(
+                    "Error: Something went wrong while inserting link".to_owned(),
+                )),
             },
         }
     }
